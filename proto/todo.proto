@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package todo;
+
+option go_package = "github.com/jerryhong21/todo-grpc/proto;proto";
+
+import "google/protobuf/empty.proto";
+
+
+// All the messages (data structs) that will be used
+message Todo {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    bool completed = 4;
+}
+
+message CreateTodoRequest {
+    string title = 1;
+    string description = 2;
+}
+
+message GetTodoRequest {
+    string id = 1;
+
+}
+
+message UpdateTodoRequest {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    bool completed = 4;
+
+}
+
+message DeleteTodoRequest {
+    string id = 1;
+
+}
+
+// Service definitions
+
+service TodoService {
+    rpc CreateTodo (CreateTodoRequest) returns (Todo);
+    rpc GetTodo (GetTodoRequest) returns (Todo);
+    rpc UpdateTodo (UpdateTodoRequest) returns (Todo);
+    rpc DeleteTodo (DeleteTodoRequest) returns (google.protobuf.Empty);
+    rpc ListTodos (google.protobuf.Empty) returns (stream Todo);
+}
+
+
