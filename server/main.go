@@ -3,13 +3,13 @@ package main
 import (
 	"bytes"
 	"context"
-	"io"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
-	"net"
 	// "strings"
 
 	// "github.com/google/uuid"
@@ -37,7 +37,7 @@ type server struct {
 }
 
 func NewServer() *server {
-	return &server {
+	return &server{
 		todos: make(map[string]*pb.Todo),
 	}
 }
@@ -55,14 +55,13 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 	// send a request to SC API to create todo
 	SC_ACTIONS_URL := "https://api.safetyculture.io/tasks/v1/actions"
 
-	// Create 
+	// Create
 	payloadData := CreateTodoPayload{
-		TaskID: req.GetId(),
-		Title: req.GetTitle(),
+		TaskID:      req.GetId(),
+		Title:       req.GetTitle(),
 		Description: req.GetDescription(),
 	}
 
-	
 	payloadBytes, err := json.Marshal(payloadData)
 	if err != nil {
 		fmt.Printf("Failed to encode payload: %v", err)
@@ -81,15 +80,15 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 	httpReq.Header.Add("accept", "application/json")
 	httpReq.Header.Add("content-type", "application/json")
 	API_KEY := os.Getenv("SC_API_KEY")
-	httpReq.Header.Add("authorization", "Bearer " + API_KEY)
+	httpReq.Header.Add("authorization", "Bearer "+API_KEY)
 
 	// Retrieve response
 	res, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		fmt.Printf("CreateTodo: error requesting SC API: %v", err)
-    	return nil, fmt.Errorf("failed to send request to SafetyCulture API: %w", err)
+		return nil, fmt.Errorf("failed to send request to SafetyCulture API: %w", err)
 	}
-	
+
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
@@ -100,21 +99,20 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 
 	fmt.Println("Successfully retrieved API - here is the response from SafetyCulture API")
 	fmt.Println(string(body))
-	
-	// return the pb.Todo 
+
+	// return the pb.Todo
 	responseTodo := &pb.Todo{
-		Id: req.GetId(),
-		Title: req.GetTitle(),
+		Id:          req.GetId(),
+		Title:       req.GetTitle(),
 		Description: req.GetDescription(),
-		Completed: false,
+		Completed:   false,
 	}
-	
+
 	// Populate the server data
 	s.todos[req.GetId()] = responseTodo
 
 	return responseTodo, nil
 }
-
 
 // Main server
 func main() {
@@ -128,7 +126,7 @@ func main() {
 	pb.RegisterTodoServiceServer(grpcServer, NewServer())
 	log.Println("gRPC server is running on port :50051")
 	if err := grpcServer.Serve(lis); err != nil {
-    	log.Fatalf("Failed to serve: %v", err)
+		log.Fatalf("Failed to serve: %v", err)
 	}
 
 }
