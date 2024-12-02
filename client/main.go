@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	// "github.com/google/uuid"
 	pb "github.com/jerryhong21/todo-grpc/proto"
+	"github.com/satori/go.uuid"
 	"google.golang.org/grpc"
 	// "google.golang.org/protobuf/types/known/emptypb"
 )
@@ -61,6 +62,11 @@ func main() {
 
 }
 
+func IsValidUUID(u string) bool {
+	_, err := uuid.FromString(u)
+	return err == nil
+}
+
 // Sends the server a request
 // pb.TodoServiceClient is a type interface.
 // the client parameter is NOT a pointer, because interfaces in Go are inherently reference types
@@ -69,15 +75,14 @@ func createTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
 
 	fmt.Print("Enter TODO ID: ")
 	id, _ := reader.ReadString('\n')
+	id = strings.TrimSpace(id)
 
 	// validate ID in UUID format
-	err := uuid.Validate(id)
+	_, err := uuid.FromString(id)
 	if err != nil {
-		fmt.Printf("Inputted %v is not a valid uuid\n", id)
+		fmt.Printf("Inputted %v is not a valid UUID\n", id)
 		return
 	}
-
-	id = strings.TrimSpace(id)
 
 	fmt.Print("Enter title: ")
 	title, _ := reader.ReadString('\n')
