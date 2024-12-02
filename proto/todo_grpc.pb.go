@@ -20,11 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TodoService_CreateTodo_FullMethodName = "/todo.TodoService/CreateTodo"
-	TodoService_GetTodo_FullMethodName    = "/todo.TodoService/GetTodo"
-	TodoService_UpdateTodo_FullMethodName = "/todo.TodoService/UpdateTodo"
-	TodoService_DeleteTodo_FullMethodName = "/todo.TodoService/DeleteTodo"
-	TodoService_ListTodos_FullMethodName  = "/todo.TodoService/ListTodos"
+	TodoService_CreateTodo_FullMethodName     = "/todo.TodoService/CreateTodo"
+	TodoService_GetTodo_FullMethodName        = "/todo.TodoService/GetTodo"
+	TodoService_UpdateTodo_FullMethodName     = "/todo.TodoService/UpdateTodo"
+	TodoService_BulkDeleteTodo_FullMethodName = "/todo.TodoService/BulkDeleteTodo"
+	TodoService_ListTodos_FullMethodName      = "/todo.TodoService/ListTodos"
 )
 
 // TodoServiceClient is the client API for TodoService service.
@@ -34,7 +34,7 @@ type TodoServiceClient interface {
 	CreateTodo(ctx context.Context, in *CreateTodoRequest, opts ...grpc.CallOption) (*Todo, error)
 	GetTodo(ctx context.Context, in *GetTodoRequest, opts ...grpc.CallOption) (*Todo, error)
 	UpdateTodo(ctx context.Context, in *UpdateTodoRequest, opts ...grpc.CallOption) (*Todo, error)
-	DeleteTodo(ctx context.Context, in *DeleteTodoRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	BulkDeleteTodo(ctx context.Context, in *BulkDeleteTodoRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ListTodos(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Todo], error)
 }
 
@@ -76,10 +76,10 @@ func (c *todoServiceClient) UpdateTodo(ctx context.Context, in *UpdateTodoReques
 	return out, nil
 }
 
-func (c *todoServiceClient) DeleteTodo(ctx context.Context, in *DeleteTodoRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *todoServiceClient) BulkDeleteTodo(ctx context.Context, in *BulkDeleteTodoRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, TodoService_DeleteTodo_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TodoService_BulkDeleteTodo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ type TodoServiceServer interface {
 	CreateTodo(context.Context, *CreateTodoRequest) (*Todo, error)
 	GetTodo(context.Context, *GetTodoRequest) (*Todo, error)
 	UpdateTodo(context.Context, *UpdateTodoRequest) (*Todo, error)
-	DeleteTodo(context.Context, *DeleteTodoRequest) (*emptypb.Empty, error)
+	BulkDeleteTodo(context.Context, *BulkDeleteTodoRequest) (*emptypb.Empty, error)
 	ListTodos(*emptypb.Empty, grpc.ServerStreamingServer[Todo]) error
 	mustEmbedUnimplementedTodoServiceServer()
 }
@@ -133,8 +133,8 @@ func (UnimplementedTodoServiceServer) GetTodo(context.Context, *GetTodoRequest) 
 func (UnimplementedTodoServiceServer) UpdateTodo(context.Context, *UpdateTodoRequest) (*Todo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateTodo not implemented")
 }
-func (UnimplementedTodoServiceServer) DeleteTodo(context.Context, *DeleteTodoRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteTodo not implemented")
+func (UnimplementedTodoServiceServer) BulkDeleteTodo(context.Context, *BulkDeleteTodoRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BulkDeleteTodo not implemented")
 }
 func (UnimplementedTodoServiceServer) ListTodos(*emptypb.Empty, grpc.ServerStreamingServer[Todo]) error {
 	return status.Errorf(codes.Unimplemented, "method ListTodos not implemented")
@@ -214,20 +214,20 @@ func _TodoService_UpdateTodo_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TodoService_DeleteTodo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteTodoRequest)
+func _TodoService_BulkDeleteTodo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BulkDeleteTodoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TodoServiceServer).DeleteTodo(ctx, in)
+		return srv.(TodoServiceServer).BulkDeleteTodo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TodoService_DeleteTodo_FullMethodName,
+		FullMethod: TodoService_BulkDeleteTodo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TodoServiceServer).DeleteTodo(ctx, req.(*DeleteTodoRequest))
+		return srv.(TodoServiceServer).BulkDeleteTodo(ctx, req.(*BulkDeleteTodoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -263,8 +263,8 @@ var TodoService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TodoService_UpdateTodo_Handler,
 		},
 		{
-			MethodName: "DeleteTodo",
-			Handler:    _TodoService_DeleteTodo_Handler,
+			MethodName: "BulkDeleteTodo",
+			Handler:    _TodoService_BulkDeleteTodo_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

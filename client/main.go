@@ -10,9 +10,8 @@ import (
 	"strings"
 	"time"
 
-	// "github.com/google/uuid"
+	"github.com/google/uuid"
 	pb "github.com/jerryhong21/todo-grpc/proto"
-	"github.com/satori/go.uuid"
 	"google.golang.org/grpc"
 	// "google.golang.org/protobuf/types/known/emptypb"
 )
@@ -48,8 +47,8 @@ func main() {
 		//     getTodo(client, reader)
 		// case "3":
 		//     updateTodo(client, reader)
-		// case "4":
-		//     deleteTodo(client, reader)
+		case "4":
+			bulkDeleteTodo(client, reader)
 		// case "5":
 		//     listTodos(client)
 		case "6":
@@ -60,11 +59,6 @@ func main() {
 		}
 	}
 
-}
-
-func IsValidUUID(u string) bool {
-	_, err := uuid.FromString(u)
-	return err == nil
 }
 
 // Sends the server a request
@@ -78,7 +72,7 @@ func createTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
 	id = strings.TrimSpace(id)
 
 	// validate ID in UUID format
-	_, err := uuid.FromString(id)
+	_, err := uuid.Parse(id)
 	if err != nil {
 		fmt.Printf("Inputted %v is not a valid UUID\n", id)
 		return
@@ -109,9 +103,46 @@ func createTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
 
 	if err != nil {
 		fmt.Printf("Error creating todo: %v", err)
+		return
 	}
 
 	// prints out the response from server
 	jsonData, _ := json.MarshalIndent(res, "", "  ")
 	fmt.Printf("Created Todo:\n %s", jsonData)
+}
+
+// TODO: Implement bulk deletion functionality
+// Make the CLI ask for multiple ids, isntead of just one
+func bulkDeleteTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
+
+	fmt.Print("Enter Todo ID to delete: ")
+	id, _ := reader.ReadString('\n')
+	id = strings.TrimSpace(id)
+
+	// checking for valid ID
+	_, err := uuid.Parse(id)
+	if err != nil {
+		fmt.Printf("Inputted %v is not a valid UUID\n", id)
+		return
+	}
+
+	// add the singular id to the string of ids
+	ids := []string{}
+	ids = append(ids, id)
+
+	// create context and wait
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	// "defer" schedules the cancel() call to run when the current function completes
+	defer cancel()
+
+	_, err = client.BulkDeleteTodo(ctx, &pb.BulkDeleteTodoRequest{
+		Ids: ids,
+	})
+
+	if err != nil {
+		fmt.Printf("Error deleting todo: %v", err)
+		return
+	}
+
+	fmt.Printf("Successfully deleted todo item:\n %s", id)
 }
