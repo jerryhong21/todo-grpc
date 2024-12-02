@@ -106,9 +106,13 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 		Description: req.GetDescription(),
 		Completed: false,
 	}
+	
+	// Populate the server data
+	s.todos[req.GetId()] = responseTodo
 
 	return responseTodo, nil
 }
+
 
 
 func main() {
