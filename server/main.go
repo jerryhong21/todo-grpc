@@ -9,13 +9,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
+	"net"
+	// "strings"
 
-	"github.com/google/uuid"
+	// "github.com/google/uuid"
 	pb "github.com/jerryhong21/todo-grpc/proto"
-	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
+	// "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // this is where i implement the functions
@@ -62,6 +62,7 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 		Description: req.GetDescription(),
 	}
 
+	
 	payloadBytes, err := json.Marshal(payloadData)
 	if err != nil {
 		fmt.Printf("Failed to encode payload: %v", err)
@@ -76,11 +77,10 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 		fmt.Printf("Failed to create HTTP request: %v", err)
 		return nil, fmt.Errorf("internal server error")
 	}
-
 	// Add relevant details to the header
 	httpReq.Header.Add("accept", "application/json")
 	httpReq.Header.Add("content-type", "application/json")
-	API_KEY := os.Getenv(("SC_API_KEY"))
+	API_KEY := os.Getenv("SC_API_KEY")
 	httpReq.Header.Add("authorization", "Bearer " + API_KEY)
 
 	// Retrieve response
@@ -97,6 +97,8 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 		fmt.Printf("Failed to read response body: %v", err)
 		return nil, fmt.Errorf("failed to process response from SafetyCulture API")
 	}
+
+	fmt.Println("Successfully retrieved API - here is the response from SafetyCulture API")
 	fmt.Println(string(body))
 	
 	// return the pb.Todo 
@@ -114,10 +116,19 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 }
 
 
-
+// Main server
 func main() {
 
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
 
-
+	grpcServer := grpc.NewServer()
+	pb.RegisterTodoServiceServer(grpcServer, NewServer())
+	log.Println("gRPC server is running on port :50051")
+	if err := grpcServer.Serve(lis); err != nil {
+    	log.Fatalf("Failed to serve: %v", err)
+	}
 
 }
