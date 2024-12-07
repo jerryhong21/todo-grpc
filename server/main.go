@@ -176,14 +176,13 @@ func (s *server) BulkDeleteTodo(ctx context.Context, req *pb.BulkDeleteTodoReque
 }
 
 func (s *server) GetTodo(ctx context.Context, req *pb.GetTodoRequest) (*pb.Todo, error) {
-	fmt.Println("HELLOOOOO")
 	id := req.GetId()
 	SC_GET_TODO_URL := "https://api.safetyculture.io/tasks/v1/actions/" + id
 
-	fmt.Printf("url is %v\n", SC_GET_TODO_URL)
-
 	getReq, _ := http.NewRequest("GET", SC_GET_TODO_URL, nil)
 	getReq.Header.Add("accept", "application/json")
+	API_KEY := os.Getenv("SC_API_KEY")
+	getReq.Header.Add("authorization", "Bearer "+API_KEY)
 
 	res, _ := http.DefaultClient.Do(getReq)
 	resBody, err := handleResponse(res)
@@ -211,6 +210,8 @@ func handleResponse(res *http.Response) ([]byte, error) {
 		fmt.Printf("Failed to read response body: %v", err)
 		return nil, fmt.Errorf("failed to process response from SafetyCulture API")
 	}
+
+	fmt.Println("Body: ")
 	fmt.Println(string(body))
 
 	// decode the response into a map of keys of type string, which maps to values of ANY kind
