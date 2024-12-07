@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"github.com/joho/godotenv"
 
 	pb "github.com/jerryhong21/todo-grpc/proto"
 	"google.golang.org/grpc"
@@ -63,6 +64,7 @@ type BulkDeleteTodoPayload struct {
 // CreateTodo
 // Returns a pb.Todo object
 // context.Context is a type interaface (inherently a pointer) and therefore does not need a pointer
+
 func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb.Todo, error) {
 
 	// send a request to SC API to create todo
@@ -96,22 +98,15 @@ func (s *server) CreateTodo(ctx context.Context, req *pb.CreateTodoRequest) (*pb
 	httpReq.Header.Add("authorization", "Bearer "+API_KEY)
 
 	// Retrieve response
-	res, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		fmt.Printf("CreateTodo: error requesting SC API: %v", err)
-		return nil, fmt.Errorf("failed to send request to SafetyCulture API: %w", err)
-	}
-
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Printf("Failed to read response body: %v", err)
-		return nil, fmt.Errorf("failed to process response from SafetyCulture API")
+	res, _:= http.DefaultClient.Do(httpReq)
+	resBody, err := handleResponse(res)
+	if resBody == nil && err != nil {
+		fmt.Printf("The API returned with an error: %v", err)
+		return nil, err
 	}
 
 	fmt.Println("Successfully retrieved API - here is the response from SafetyCulture API")
-	fmt.Println(string(body))
+	fmt.Println(string(resBody))
 
 	// return the pb.Todo
 	responseTodo := &pb.Todo{
@@ -181,9 +176,11 @@ func (s *server) BulkDeleteTodo(ctx context.Context, req *pb.BulkDeleteTodoReque
 }
 
 func (s *server) GetTodo(ctx context.Context, req *pb.GetTodoRequest) (*pb.Todo, error) {
-	id := req.GetId();
+	fmt.Println("HELLOOOOO")
+	id := req.GetId()
 	SC_GET_TODO_URL := "https://api.safetyculture.io/tasks/v1/actions/" + id
 
+	fmt.Printf("url is %v\n", SC_GET_TODO_URL)
 
 	getReq, _ := http.NewRequest("GET", SC_GET_TODO_URL, nil)
 	getReq.Header.Add("accept", "application/json")
@@ -199,6 +196,10 @@ func (s *server) GetTodo(ctx context.Context, req *pb.GetTodoRequest) (*pb.Todo,
 	return s.todos[id], nil
 }
 
+// func (s *server) UpdateTodo(ctx context.Context, req *pb.UpdateTodoRequest) (*pb.Todo, error) {
+// 	id := req.GetId()
+
+// }
 
 // function to handle response
 // only checks for whether there are any errors
@@ -210,10 +211,11 @@ func handleResponse(res *http.Response) ([]byte, error) {
 		fmt.Printf("Failed to read response body: %v", err)
 		return nil, fmt.Errorf("failed to process response from SafetyCulture API")
 	}
+	fmt.Println(string(body))
 
 	// decode the response into a map of keys of type string, which maps to values of ANY kind
 	var result map[string]any
-	err = json.NewDecoder(res.Body).Decode(&result); 
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
@@ -224,21 +226,21 @@ func handleResponse(res *http.Response) ([]byte, error) {
 		fmt.Println("Normal response")
 		return body, nil
 	}
-	
+
 	// Else, print the error
-	return nil, fmt.Errorf("%v", body)
+	return nil, fmt.Errorf("%s", string(body))
 	/*
-	
-	IF WE WANT OT HANDLE THE ERROR REPSONSE:
 
-	errRes := ScErrorResponse{}
+		IF WE WANT OT HANDLE THE ERROR REPSONSE:
 
-	// decode the json string contained in the "mesage field of the results map"
-	// breakdown:
-	// result["message"] is of type "any" - which means we need to make a type assertion: .(string)
-	// []byte(...) converts the string value into a byte slice since json.Unmarshal requires a byte slice
-	// finally, json.Unmarshal decodes JSON data, into a go strct
-	err = json.Unmarshal([]byte(result["message"].(string)), &errRes)
+		errRes := ScErrorResponse{}
+
+		// decode the json string contained in the "mesage field of the results map"
+		// breakdown:
+		// result["message"] is of type "any" - which means we need to make a type assertion: .(string)
+		// []byte(...) converts the string value into a byte slice since json.Unmarshal requires a byte slice
+		// finally, json.Unmarshal decodes JSON data, into a go strct
+		err = json.Unmarshal([]byte(result["message"].(string)), &errRes)
 	*/
 }
 
@@ -249,6 +251,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
+
+	err = godotenv.Load("../.env")
+    if err != nil {
+        log.Fatalf("Error loading .env file: %v", err)
+    }
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterTodoServiceServer(grpcServer, NewServer())

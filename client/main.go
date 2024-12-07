@@ -43,8 +43,8 @@ func main() {
 		switch option {
 		case "1":
 			createTodo(client, reader)
-		// case "2":
-		//     getTodo(client, reader)
+		case "2":
+			getTodo(client, reader)
 		// case "3":
 		//     updateTodo(client, reader)
 		case "4":
@@ -61,6 +61,12 @@ func main() {
 
 }
 
+func validateUUID(id string) bool {
+	// validate ID in UUID format
+	_, err := uuid.Parse(id)
+	return err == nil
+}
+
 // Sends the server a request
 // pb.TodoServiceClient is a type interface.
 // the client parameter is NOT a pointer, because interfaces in Go are inherently reference types
@@ -70,11 +76,8 @@ func createTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
 	fmt.Print("Enter TODO ID: ")
 	id, _ := reader.ReadString('\n')
 	id = strings.TrimSpace(id)
-
-	// validate ID in UUID format
-	_, err := uuid.Parse(id)
-	if err != nil {
-		fmt.Printf("Inputted %v is not a valid UUID\n", id)
+	if !validateUUID(id) {
+		fmt.Printf("uuid %v is not valid!\n", id)
 		return
 	}
 
@@ -111,6 +114,37 @@ func createTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
 	fmt.Printf("Created Todo:\n %s", jsonData)
 }
 
+func getTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
+
+	fmt.Print("Enter TODO ID: ")
+	id, _ := reader.ReadString('\n')
+	id = strings.TrimSpace(id)
+
+	// check for valid Id
+	if !validateUUID(id) {
+		fmt.Printf("uuid %v is not valid!\n", id)
+		return
+	}
+
+	// create context and call the client
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	retrieved, err := client.GetTodo(ctx, &pb.GetTodoRequest{
+		Id: id,
+	})
+
+	if err != nil {
+		fmt.Printf("Error getting todo: %v", err)
+		return
+	}
+
+	fmt.Println("Retrieved todo item:")
+	fmt.Printf("id: %v\n", retrieved.GetId())
+	fmt.Printf("Title: %v\n", retrieved.GetTitle())
+	fmt.Printf("Description: %v\n", retrieved.GetDescription())
+}
+
 // TODO: Implement bulk deletion functionality
 // Make the CLI ask for multiple ids, isntead of just one
 func bulkDeleteTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
@@ -120,9 +154,8 @@ func bulkDeleteTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
 	id = strings.TrimSpace(id)
 
 	// checking for valid ID
-	_, err := uuid.Parse(id)
-	if err != nil {
-		fmt.Printf("Inputted %v is not a valid UUID\n", id)
+	if !validateUUID(id) {
+		fmt.Printf("uuid %v is not valid!\n", id)
 		return
 	}
 
@@ -135,7 +168,7 @@ func bulkDeleteTodo(client pb.TodoServiceClient, reader *bufio.Reader) {
 	// "defer" schedules the cancel() call to run when the current function completes
 	defer cancel()
 
-	_, err = client.BulkDeleteTodo(ctx, &pb.BulkDeleteTodoRequest{
+	_, err := client.BulkDeleteTodo(ctx, &pb.BulkDeleteTodoRequest{
 		Ids: ids,
 	})
 
